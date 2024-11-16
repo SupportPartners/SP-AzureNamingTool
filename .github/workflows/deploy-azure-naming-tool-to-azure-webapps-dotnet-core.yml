@@ -21,7 +21,7 @@ name: Azure Naming Tool - Build and deploy to an Azure Web App
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
-  DOTNET_VERSION: '8.0.x'                 # set this to the .NET Core version to use
+  DOTNET_VERSION: '8.0.x'             # set this to the .NET Core version to use
 
 on:
   push:
@@ -37,20 +37,24 @@ permissions:
                 
 jobs:
   check-secrets:
-      runs-on: ubuntu-latest
-      defaults:
-        run:
-          working-directory: src    
-      outputs:
-        secrets-valid: ${{ steps.secrets-valid.outputs.isvalid }}
-      steps:
-        - uses: actions/checkout@v3      
-        - id: secrets-valid
-          env: 
-            azure-webapp-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-            azure-webapp-publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          if: (env.azure-webapp-name != null && env.azure-webapp-publish-profile != null)
-          run: echo 'isvalid=true' >> $GITHUB_OUTPUT
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src    
+    outputs:
+      secrets-valid: ${{ steps.secrets-valid.outputs.isvalid }}
+    steps:
+      - uses: actions/checkout@v4      
+      - id: secrets-valid
+        env: 
+          azure-webapp-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          azure-webapp-publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        run: |
+          if [ -n "$azure-webapp-name" ] && [ -n "$azure-webapp-publish-profile" ]; then
+            echo "isvalid=true" >> $GITHUB_OUTPUT
+          else
+            echo "isvalid=false" >> $GITHUB_OUTPUT
+          fi
             
   build:
     runs-on: ubuntu-latest
@@ -60,9 +64,9 @@ jobs:
     needs: [check-secrets]
     if: needs.check-secrets.outputs.secrets-valid == 'true'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up .NET Core
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       
